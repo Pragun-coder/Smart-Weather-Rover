@@ -9,11 +9,11 @@ import paho.mqtt.client as mqtt
 
 # ================= CONFIGURATION =================
 COM_PORT = "COM6"
-BAUD = 9600  # Make sure this matches your Arduino Serial.begin() rate
+BAUD = 9600
 
 # ThingSpeak Settings
 WRITE_KEY = "05NUNO16U85E3BWS"
-UPLOAD_INTERVAL = 15  # Seconds between ThingSpeak uploads
+UPLOAD_INTERVAL = 15  # Seconds
 
 # MQTT Settings
 BROKER = "broker.emqx.io"
@@ -21,9 +21,13 @@ PORT = 1883
 CMD_TOPIC = "pragun_rover_2026/cmd"
 SENSOR_TOPIC = "pragun_rover_2026/sensors"
 
-# Camera Config (Local Backup Server)
+# Local Flask Camera Server Config
 CAM_PORT = 5000
-PHONE_CAM_URL = "http://192.168.1.50:8080/video"  # Update with local phone IP if using IP Webcam
+PHONE_CAM_URL = "http://192.168.1.50:8080/video"
+
+# Default Coordinates if GPS has no fix yet (Vidyavihar / Jaipur, Rajasthan)
+DEFAULT_LAT = 26.9124
+DEFAULT_LNG = 75.7873
 
 # ================= SERIAL CONNECTION =================
 try:
@@ -33,16 +37,85 @@ except Exception as e:
     print(f"[SERIAL ERROR] Could not open {COM_PORT}: {e}")
     ser = None
 
-# ================= TELEMETRY DATA STATE =================
+# ================= TELEMETRY STATE =================
 latest = {
+    # Local Rover Sensors
     "temp": 0.0,
     "hum": 0.0,
     "rain": 0,
     "soil": 0,
-    "lat": 0.0,
-    "lng": 0.0
+    "lat": DEFAULT_LAT,
+    "lng": DEFAULT_LNG,
+    "press": 1013.25,
+    "bat": 100,
+    
+    # Regional API Insights
+    "api_clouds": 0,          # % Cloud cover
+    "api_rain": 0.0,          # mm of rain nearby
+    "api_wind_speed": 0.0,    # km/h
+    "api_wind_dir": "N/A",    # Cardinal Direction (e.g. NW)
+    "api_condition": "Unknown" # Text description
 }
+
 lastUpload = 0
+last_api_fetch = 0
+
+# ================= WMO WEATHER CODE TRANSLATOR =================
+def decode_wmo_code(code):
+    codes = {
+        0: "Clear Sky ☀️",
+        1: "Mainly Clear 🌤️", 2: "Partly Cloudy ⛅", 3: "Overcast ☁️",
+        45: "Fog 🌫️", 48: "Depositing Rime Fog 🌫️",
+        51: "Light Drizzle 🌧️", 53: "Moderate Drizzle 🌧️", 55: "Dense Drizzle 🌧️",
+        61: "Slight Rain 🌧️", 63: "Moderate Rain 🌧️", 65: "Heavy Rain 🌧️",
+        80: "Slight Rain Showers 🌦️", 81: "Moderate Rain Showers 🌦️", 82: "Violent Rain Showers ⛈️",
+        95: "Thunderstorm 🌩️", 96: "Thunderstorm with Hail ⛈️"
+    }
+    return codes.get(code, "Cloudy ☁️")
+
+def degrees_to_cardinal(deg):
+    dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    ix = int((deg + 22.5) / 45) % 8
+    return dirs[ix]
+
+# ================= OPEN-METEO WEATHER API THREAD =================
+def fetch_api_weather():
+    global latest, last_api_fetch
+
+    while True:
+        try:
+            lat = latest["lat"] if latest["lat"] != 0.0 else DEFAULT_LAT
+            lng = latest["lng"] if latest["lng"] != 0.0 else DEFAULT_LNG
+
+            url = (
+                f"https://api.open-meteo.com/v1/forecast?"
+                f"latitude={lat}&longitude={lng}&current="
+                f"precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m"
+            )
+
+            res = requests.get(url, timeout=5)
+            if res.status_code == 200:
+                data = res.json().get("current", {})
+                
+                latest["api_clouds"] = data.get("cloud_cover", 0)
+                latest["api_rain"] = data.get("precipitation", 0.0)
+                latest["api_wind_speed"] = data.get("wind_speed_10m", 0.0)
+                
+                wind_deg = data.get("wind_direction_10m", 0)
+                latest["api_wind_dir"] = degrees_to_cardinal(wind_deg)
+                
+                wcode = data.get("weather_code", 0)
+                latest["api_condition"] = decode_wmo_code(wcode)
+
+                print(f"[WEATHER API] Sky: {latest['api_condition']} | Clouds: {latest['api_clouds']}% | Wind: {latest['api_wind_speed']} km/h {latest['api_wind_dir']}")
+
+        except Exception as e:
+            print(f"[WEATHER API ERROR] {e}")
+
+        # Refresh weather API data every 5 minutes
+        time.sleep(300)
+
+threading.Thread(target=fetch_api_weather, daemon=True).start()
 
 # ================= MQTT HANDLERS =================
 client = mqtt.Client()
@@ -79,7 +152,7 @@ try:
 except Exception as e:
     print(f"[MQTT ERROR] Could not connect to broker {BROKER}: {e}")
 
-# ================= OPTIONAL FLASK CAMERA STREAM =================
+# ================= LOCAL CAMERA STREAM =================
 app = Flask(__name__)
 
 def generate_frames():
@@ -105,7 +178,6 @@ def run_camera_server():
     log.setLevel(logging.ERROR)
     app.run(host='0.0.0.0', port=CAM_PORT, debug=False, use_reloader=False)
 
-# Start local camera server thread in background
 threading.Thread(target=run_camera_server, daemon=True).start()
 
 # ================= SERIAL READER THREAD =================
@@ -124,16 +196,22 @@ def serialThread():
                 print(f"[SERIAL RX] {line}")
                 data = line.split(",")
 
-                # Expecting CSV format: temp,hum,rain,soil,lat,lng
-                if len(data) == 6:
+                # CSV Format: temp,hum,rain,soil,lat,lng,pressure,battery
+                if len(data) == 8:
                     latest["temp"] = float(data[0])
                     latest["hum"] = float(data[1])
                     latest["rain"] = int(data[2])
                     latest["soil"] = int(data[3])
-                    latest["lat"] = float(data[4])
-                    latest["lng"] = float(data[5])
+                    
+                    parsed_lat = float(data[4])
+                    parsed_lng = float(data[5])
+                    if parsed_lat != 0.0: latest["lat"] = parsed_lat
+                    if parsed_lng != 0.0: latest["lng"] = parsed_lng
+                    
+                    latest["press"] = float(data[6])
+                    latest["bat"] = int(data[7])
 
-                    # 1. Publish Telemetry via MQTT to Dashboard
+                    # 1. Publish Combined Telemetry via MQTT to Dashboard
                     client.publish(SENSOR_TOPIC, json.dumps(latest))
 
                     # 2. Upload to ThingSpeak at scheduled interval
@@ -145,7 +223,9 @@ def serialThread():
                             "field3": latest["rain"],
                             "field4": latest["soil"],
                             "field5": latest["lat"],
-                            "field6": latest["lng"]
+                            "field6": latest["lng"],
+                            "field7": latest["press"],
+                            "field8": latest["bat"]
                         }
                         
                         try:
@@ -160,7 +240,6 @@ def serialThread():
             print(f"[SERIAL THREAD ERROR] {e}")
             time.sleep(1)
 
-# Start serial thread in background
 threading.Thread(target=serialThread, daemon=True).start()
 
 # ================= MAIN BASE STATION LOOP =================
@@ -171,8 +250,8 @@ print(f"COM PORT       : {COM_PORT}")
 print(f"MQTT BROKER    : {BROKER}")
 print(f"COMMAND TOPIC  : {CMD_TOPIC}")
 print(f"SENSOR TOPIC   : {SENSOR_TOPIC}")
-print(f"ThingSpeak     : ENABLED (Interval: {UPLOAD_INTERVAL}s)")
-print(f"LOCAL CAM URL  : http://localhost:{CAM_PORT}/video")
+print(f"WEATHER API    : Open-Meteo Integrated")
+print(f"ThingSpeak     : ENABLED (Fields 1-8)")
 print("====================================")
 print("SYSTEM READY. WAITING FOR DATA & COMMANDS...\n")
 
