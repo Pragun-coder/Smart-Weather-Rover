@@ -14,7 +14,10 @@ The system features real-time **MQTT teleoperation**, dynamic **GPS tracking**, 
 * 📊 **Live Telemetry & Analytics:** Real-time sensor charts (Temperature & Humidity) using Chart.js alongside live readings for soil moisture, rain detection, and distance metrics.
 * ☁️ **Cloud Data Logging:** Automatic sensor data uploads to ThingSpeak every 15 seconds.
 * ⚡ **Dual Power System:** Independent battery isolation (3A BMS for logic, 10A BMS for motors) with solar-assisted charging via a TP5100 module.
-
+  
+---
+![Rover Hardware](media/Rover_image.jpg)
+![Rover Hardware](media/Dashboard_image.png)
 ---
 
 ## 🛠️ System Architecture
