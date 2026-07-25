@@ -11,7 +11,7 @@
 <!-- Charts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Leaflet CSS & JS -->
+<!-- Leaflet Map CSS & JS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
@@ -63,34 +63,34 @@ header {
     padding-bottom: 10px;
 }
 
+/* VDO.Ninja 16:9 Responsive Video Container */
+.vdo-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    height: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    background: #05080e;
+}
+
+.vdo-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 .status {
     font-size: 24px;
     text-align: center;
     margin-bottom: 30px;
     font-weight: bold;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-}
-
-/* Video Stream Box */
-.video-container {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio */
-    border-radius: 20px;
-    overflow: hidden;
-    background: #000;
-    margin-bottom: 30px;
-    border: 2px solid rgba(0, 229, 255, 0.3);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-}
-
-.video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
 }
 
 .grid {
@@ -147,9 +147,10 @@ header {
 
 .center { text-align: center; margin-bottom: 20px; }
 
+/* Grid layouts */
 .stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 20px;
     margin-top: 25px;
 }
@@ -176,6 +177,26 @@ header {
     font-weight: bold;
     color: #00e5ff;
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+/* AI Prediction Custom Styling */
+.ai-box {
+    background: #0d1726;
+    border: 2px solid rgba(0, 229, 255, 0.4);
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+    margin-top: 10px;
+}
+
+.ai-prediction-text {
+    font-size: 22px;
+    font-weight: bold;
+    color: #00e5ff;
+    margin-top: 12px;
+    line-height: 1.4;
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
 .charts {
@@ -230,7 +251,9 @@ header {
 
 .footer { margin-top: 30px; text-align: center; color: #888; font-size: 14px; letter-spacing: 1px; }
 
-@media(max-width: 1024px) { .stats { grid-template-columns: 1fr 1fr; } }
+@media(max-width: 1024px) { 
+    .stats { grid-template-columns: 1fr 1fr; } 
+}
 @media(max-width:900px) { .charts { grid-template-columns: 1fr; } }
 @media(max-width:600px) {
     .stats { grid-template-columns: 1fr; }
@@ -246,17 +269,32 @@ header {
 
 <div class="container">
 
-    <!-- Control & Status Card -->
+    <!-- 1. TOP SEPARATE BOX: VDO.NINJA LIVE CAMERA STREAM -->
+    <div class="card">
+        <div class="section-title">📹 Live Stream (VDO.Ninja)</div>
+        <div class="vdo-container">
+            <!-- Replace 'YOUR_STREAM_ID' below with your actual VDO.Ninja Push/View ID -->
+            <iframe 
+                src="https://vdo.ninja/?view=DemoRoverCam&autoplay=1&cleanoutput=1" 
+                allow="autoplay; camera; microphone; fullscreen; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+
+    <!-- 2. AI SMART FORECAST BOX -->
+    <div class="card">
+        <div class="section-title">🤖 AI Forecast</div>
+        <div class="ai-box">
+            <div class="label">MICRO-CLIMATE PREDICTION & ACTION ADVICE</div>
+            <div class="ai-prediction-text" id="aiPrediction">Waiting for live sensor telemetry to calculate forecast...</div>
+        </div>
+    </div>
+
+    <!-- 3. CONTROL & STATUS CARD -->
     <div class="card">
         <div class="status" id="status" style="color: #ffeb3b;">🟡 CONNECTING...</div>
 
-        <!-- ADDED BACK: LIVE VIDEO STREAM IFRAME -->
-        <div class="section-title">Live Video Stream</div>
-        <div class="video-container">
-            <iframe src="https://vdo.ninja/?view=PragunRoverCam&autoplay=1&muted=1&cleanoutput=1" allow="autoplay; camera; microphone"></iframe>
-        </div>
-
-        <div class="section-title">Rover Controls</div>
         <div class="grid">
             <div></div>
             <button class="move forward" onclick="send('FORWARD')">▲</button>
@@ -283,10 +321,10 @@ header {
         </div>
     </div>
 
-    <!-- Dashboard Statistics Card -->
+    <!-- 4. DASHBOARD STATISTICS CARD -->
     <div class="card">
         <div class="section-title">System Statistics</div>
-        <div class="stats" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="stats">
             <div class="box"><div class="label">RUNNING TIME</div><div class="value" id="statUptime">00:00:00</div></div>
             <div class="box"><div class="label">COMMANDS SENT</div><div class="value" id="statCmds">0</div></div>
             <div class="box"><div class="label">SENSOR UPDATES</div><div class="value" id="statSensors">0</div></div>
@@ -296,22 +334,17 @@ header {
         </div>
     </div>
 
-    <!-- Environmental Sensors Card -->
+    <!-- 5. ENVIRONMENTAL SENSORS CARD -->
     <div class="card">
-        <div class="section-title">Environmental Data & Predictions</div>
+        <div class="section-title">Environmental Data</div>
         <div class="stats">
             <div class="box"><div class="label">TEMPERATURE</div><div class="value" id="temp">--</div></div>
             <div class="box"><div class="label">HUMIDITY</div><div class="value" id="hum">--</div></div>
-            <div class="box"><div class="label">PRESSURE (BMP180)</div><div class="value" id="pressure">--</div></div>
+            <div class="box"><div class="label">PRESSURE</div><div class="value" id="press">--</div></div>
             <div class="box"><div class="label">SOIL</div><div class="value" id="soil">--</div></div>
             <div class="box"><div class="label">RAIN</div><div class="value" id="rain">--</div></div>
             <div class="box"><div class="label">LATITUDE</div><div class="value" id="lat">--</div></div>
             <div class="box"><div class="label">LONGITUDE</div><div class="value" id="lng">--</div></div>
-            
-            <!-- AI Prediction Box -->
-            <div class="box" style="grid-column: span 2; border: 1px solid rgba(0, 229, 255, 0.4);"><div class="label">🤖 AI PREDICTION</div><div class="value" id="prediction" style="color: #00e676; font-size: 24px;">ANALYZING...</div></div>
-
-            <div class="box" style="grid-column: span 3;"><div class="label">WEATHER RADAR INSIGHTS</div><div class="value" id="weatherApi" style="font-size: 20px;">FETCHING...</div></div>
         </div>
 
         <div class="charts">
@@ -320,7 +353,7 @@ header {
         </div>
     </div>
 
-    <!-- Map Card -->
+    <!-- 6. MAP CARD -->
     <div class="card">
         <div class="section-title">GPS Navigation</div>
         <div id="map"></div>
@@ -333,8 +366,8 @@ header {
 <script>
 // ================= GLOBALS & CONFIG =================
 const BROKER = "wss://broker.emqx.io:8084/mqtt";
-const CMD_TOPIC = "rover_demo/cmd";
-const SENSOR_TOPIC = "rover_demo/sensors";
+const CMD_TOPIC = "demo_rover/cmd";
+const SENSOR_TOPIC = "demo_rover/sensors";
 
 let labels = [], tempData = [], humData = [];
 let map, marker, routeLine, routePoints = [];
@@ -360,22 +393,6 @@ function getDistance(lat1, lon1, lat2, lon2) {
     const dLon = (lon2 - lon1) * (Math.PI / 180); 
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2); 
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-// ================= WEATHER API FETCH =================
-function fetchWeatherAPI(lat, lng) {
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.current_weather) {
-                const temp = data.current_weather.temperature;
-                const wind = data.current_weather.windspeed;
-                document.getElementById("weatherApi").innerHTML = `☁️ ${temp}°C | Wind: ${wind} km/h`;
-            }
-        })
-        .catch(() => {
-            document.getElementById("weatherApi").innerHTML = "API Unavailable";
-        });
 }
 
 // ================= LEAFLET MAP INITIALIZATION =================
@@ -439,19 +456,18 @@ client.on("message", (topic, message) => {
 
     let d = JSON.parse(message.toString());
 
-    document.getElementById("temp").innerHTML = d.temp + " °C";
-    document.getElementById("hum").innerHTML = d.hum + " %";
-    document.getElementById("pressure").innerHTML = d.press ? d.press + " hPa" : "--";
+    // Update Environmental Values
+    document.getElementById("temp").innerHTML = d.temp !== undefined ? d.temp + " °C" : "--";
+    document.getElementById("hum").innerHTML = d.hum !== undefined ? d.hum + " %" : "--";
+    document.getElementById("press").innerHTML = d.press !== undefined ? d.press + " hPa" : (d.pressure !== undefined ? d.pressure + " hPa" : "--");
     document.getElementById("soil").innerHTML = d.soil || "--";
     document.getElementById("rain").innerHTML = d.rain || "--";
-    document.getElementById("lat").innerHTML = Number(d.lat).toFixed(6);
-    document.getElementById("lng").innerHTML = Number(d.lng).toFixed(6);
+    document.getElementById("lat").innerHTML = d.lat ? Number(d.lat).toFixed(6) : "--";
+    document.getElementById("lng").innerHTML = d.lng ? Number(d.lng).toFixed(6) : "--";
 
-    // Update AI Prediction
-    if (d.prediction) {
-        document.getElementById("prediction").innerHTML = d.prediction;
-    } else {
-        document.getElementById("prediction").innerHTML = "NO DATA";
+    // Update Gemini AI Prediction Text
+    if(d.prediction) {
+        document.getElementById("aiPrediction").innerHTML = d.prediction;
     }
 
     // Update Charts
@@ -463,7 +479,7 @@ client.on("message", (topic, message) => {
     if(window.humChart) window.humChart.update();
 
     // Update Map
-    if(d.lat != 0 && d.lng != 0 && map) {
+    if(d.lat && d.lng && d.lat != 0 && d.lng != 0 && map) {
         gpsPointsCount++;
         document.getElementById("statGps").innerHTML = gpsPointsCount;
         
@@ -485,7 +501,6 @@ client.on("message", (topic, message) => {
         if (firstGpsFix) {
             map.setView([currentLat, currentLng], 16);
             firstGpsFix = false;
-            fetchWeatherAPI(currentLat, currentLng);
         }
     }
 });
