@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- Dark Metallic Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#090D16"/>
+    </radialGradient>
+
+    <!-- Vibrant Emerald Leaf Gradient -->
+    <linearGradient id="leafGradLeft" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+
+    <linearGradient id="leafGradRight" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#047857"/>
+      <stop offset="60%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#A7F3D0"/>
+    </linearGradient>
+
+    <!-- Cyan Sensor & Accent Gradient -->
+    <linearGradient id="techCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+
+    <!-- Golden Power/Sun Accent -->
+    <linearGradient id="sunGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+
+    <!-- Outer Neon Ring Glow -->
+    <linearGradient id="ringGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Badge Shield -->
+  <circle cx="250" cy="250" r="230" fill="url(#bgGrad)" stroke="url(#ringGlow)" stroke-width="8"/>
+  <circle cx="250" cy="250" r="212" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="6 6"/>
+
+  <!-- ================= 1. ELEGANT CROWNING LEAVES ================= -->
+  <g id="leaves">
+    <!-- Left Leaf -->
+    <path d="M 250 220 C 160 190 120 100 220 50 C 255 105 225 175 250 220 Z" 
+          fill="url(#leafGradLeft)"/>
+    <path d="M 250 220 C 210 170 200 110 220 50" 
+          fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+
+    <!-- Right Leaf (Overlapping) -->
+    <path d="M 250 220 C 340 190 380 100 280 50 C 245 105 275 175 250 220 Z" 
+          fill="url(#leafGradRight)"/>
+    <path d="M 250 220 C 290 170 300 110 280 50" 
+          fill="none" stroke="#065F46" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Central Glowing Tech Node -->
+    <circle cx="250" cy="220" r="8" fill="url(#techCyan)"/>
+  </g>
+
+  <!-- ================= 2. IOT WIRELESS SIGNALS ================= -->
+  <g id="signals">
+    <path d="M 215 40 A 45 45 0 0 1 285 40" fill="none" stroke="url(#techCyan)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 195 25 A 70 70 0 0 1 305 25" fill="none" stroke="url(#leafGradLeft)" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- ================= 3. ROVER CHASSIS & SENSORS ================= -->
+  <!-- Sensor Mast -->
+  <line x1="250" y1="220" x2="250" y2="280" stroke="url(#techCyan)" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Rover Upper Body / Deck -->
+  <path d="M 160 330 L 195 275 L 305 275 L 340 330 Z" 
+        fill="#0F172A" stroke="url(#leafGradLeft)" stroke-width="5" stroke-linejoin="round"/>
+  
+  <!-- Dashboard Camera/LiDAR Eye -->
+  <rect x="220" y="288" width="60" height="22" rx="6" fill="#1E293B" stroke="url(#techCyan)" stroke-width="3"/>
+  <circle cx="250" cy="299" r="6" fill="url(#sunGold)"/>
+
+  <!-- ================= 4. ROVER TREADS & WHEELS ================= -->
+  <!-- Outer All-Terrain Track -->
+  <rect x="130" y="325" width="240" height="65" rx="32.5" 
+        fill="#020617" stroke="url(#leafGradLeft)" stroke-width="6"/>
+
+  <!-- Wheel Assemblies (4 Rugged Wheels) -->
+  <!-- Wheel 1 -->
+  <circle cx="165" cy="357.5" r="20" fill="#1E293B" stroke="url(#techCyan)" stroke-width="4"/>
+  <circle cx="165" cy="357.5" r="8" fill="#34D399"/>
+
+  <!-- Wheel 2 -->
+  <circle cx="222" cy="357.5" r="20" fill="#1E293B" stroke="url(#techCyan)" stroke-width="4"/>
+  <circle cx="222" cy="357.5" r="8" fill="#34D399"/>
+
+  <!-- Wheel 3 -->
+  <circle cx="278" cy="357.5" r="20" fill="#1E293B" stroke="url(#techCyan)" stroke-width="4"/>
+  <circle cx="278" cy="357.5" r="8" fill="#34D399"/>
+
+  <!-- Wheel 4 -->
+  <circle cx="335" cy="357.5" r="20" fill="#1E293B" stroke="url(#techCyan)" stroke-width="4"/>
+  <circle cx="335" cy="357.5" r="8" fill="#34D399"/>
+
+  <!-- Ground Tech Line -->
+  <path d="M 100 415 L 400 415" stroke="url(#techCyan)" stroke-width="3" stroke-linecap="round" stroke-dasharray="16 10"/>
+</svg>
