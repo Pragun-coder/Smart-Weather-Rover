@@ -6,7 +6,7 @@
       <stop offset="100%" stop-color="#090D16"/>
     </radialGradient>
 
-    <!-- Vibrant Emerald Leaf Gradient -->
+    <!-- Vibrant Emerald Leaf Gradient Pragun-->
     <linearGradient id="leafGradLeft" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#059669"/>
       <stop offset="50%" stop-color="#10B981"/>
