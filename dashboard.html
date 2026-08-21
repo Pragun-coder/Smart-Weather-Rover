@@ -6,7 +6,7 @@
 <title>🌎 Pragun Smart Rover</title>
 
 <!-- MQTT -->
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
 
 <!-- Charts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -128,11 +128,12 @@ header {
 .right { background: linear-gradient(145deg, #ffa726, #ff9800); }
 .stop { background: linear-gradient(145deg, #ef5350, #f44336); }
 
+/* Identical Styling for Probe Buttons */
 .servo {
     width: 220px;
     height: 60px;
     margin: 10px;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     border: none;
     border-radius: 18px;
@@ -144,6 +145,7 @@ header {
 }
 
 .servo:hover { transform: scale(1.05) translateY(-2px); filter: brightness(1.2); }
+.servo:active { transform: scale(0.95); }
 
 .center { text-align: center; margin-bottom: 20px; }
 
@@ -191,11 +193,11 @@ header {
 }
 
 .ai-prediction-text {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: bold;
     color: #00e5ff;
     margin-top: 12px;
-    line-height: 1.4;
+    line-height: 1.5;
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
@@ -262,6 +264,10 @@ header {
     header { font-size: 30px; }
 }
 </style>
+<link rel="icon" href="data:,">
+<!-- Favicon points to nothing on purpose -- media/rover_logo.svg doesn't exist on
+     your machine and was causing a 404 console error. Replace with a real icon
+     file/URL if you have one; this just silences the harmless error for now. -->
 </head>
 <body>
 
@@ -269,24 +275,42 @@ header {
 
 <div class="container">
 
-    <!-- 1. TOP SEPARATE BOX: VDO.NINJA LIVE CAMERA STREAM -->
+    <!-- 1. VDO.NINJA LIVE CAMERA STREAM -->
     <div class="card">
         <div class="section-title">📹 Live Stream (VDO.Ninja)</div>
-        <div class="vdo-container">
-            <!-- Replace 'YOUR_STREAM_ID' below with your actual VDO.Ninja Push/View ID -->
+        <!-- Fully custom button, real functionality. Uses VDO.Ninja's documented HTTP
+             API (https://api.vdo.ninja/APIKEY/camera/TARGET/VALUE) instead of the
+             postMessage IFRAME API -- postMessage was crashing inside VDO.Ninja's own
+             script; this HTTP endpoint is a separate, server-side relay and doesn't
+             go through that broken code path at all.
+             REQUIRES: the hidden iframe below stays open with &api=... matching
+             VDO_API_KEY in the JS, registering this session so the HTTP calls have
+             somewhere to route to. -->
+        <div class="center" style="margin-bottom: 15px;">
+            <button class="servo" id="camToggleBtn" style="background: linear-gradient(145deg, #ef5350, #f44336);" onclick="toggleCamera()">📷 Turn Camera OFF</button>
+        </div>
+        <iframe 
+            id="vdoControlFrame"
+            src="https://vdo.ninja/?director=PragunsRoverSmartWeather2026&password=PragunsWeather&proxy&api=PragunRoverCamCtrl2026"
+            style="width:1px; height:1px; position:absolute; opacity:0; pointer-events:none;"
+            allow="autoplay">
+        </iframe>
+        <!-- Big, clean video-only viewer. -->
+        <div class="vdo-container" id="vdoContainer">
             <iframe 
-                src="https://vdo.ninja/?view=DemoRoverCam&autoplay=1&cleanoutput=1" 
+                id="vdoViewFrame"
+                src="https://vdo.ninja/?view=PragunRoverCam&solo&room=PragunsRoverSmartWeather2026&password=PragunsWeather&cleanoutput=1&autoplay=1&proxy"
                 allow="autoplay; camera; microphone; fullscreen; picture-in-picture" 
                 allowfullscreen>
             </iframe>
         </div>
     </div>
 
-    <!-- 2. AI SMART FORECAST BOX -->
+    <!-- 2. GEMINI AI OVERVIEW BOX -->
     <div class="card">
-        <div class="section-title">🤖 AI Forecast</div>
+        <div class="section-title">🤖 AI Overview</div>
         <div class="ai-box">
-            <div class="label">MICRO-CLIMATE PREDICTION & ACTION ADVICE</div>
+            <div class="label">MICRO-CLIMATE ANALYSIS & ACTIONABLE INSIGHTS</div>
             <div class="ai-prediction-text" id="aiPrediction">Waiting for live sensor telemetry to calculate forecast...</div>
         </div>
     </div>
@@ -295,23 +319,33 @@ header {
     <div class="card">
         <div class="status" id="status" style="color: #ffeb3b;">🟡 CONNECTING...</div>
 
+        <!-- Direction Controls -->
         <div class="grid">
             <div></div>
-            <button class="move forward" onclick="send('FORWARD')">▲</button>
+            <button class="move forward" onclick="send('F')">▲</button>
             <div></div>
 
-            <button class="move left" onclick="send('LEFT')">◀</button>
-            <button class="move stop" onclick="send('STOP')">■</button>
-            <button class="move right" onclick="send('RIGHT')">▶</button>
+            <button class="move left" onclick="send('L')">◀</button>
+            <button class="move stop" onclick="send('S')">■</button>
+            <button class="move right" onclick="send('R')">▶</button>
 
             <div></div>
-            <button class="move backward" onclick="send('BACKWARD')">▼</button>
+            <button class="move backward" onclick="send('B')">▼</button>
             <div></div>
         </div>
 
+        <!-- Servo / Probe Controls (Identical Styling) -->
         <div class="center">
-            <button class="servo" onclick="send('RAISE')">Q ↑ Raise Sensor</button>
-            <button class="servo" onclick="send('LOWER')">E ↓ Lower Sensor</button>
+            <button class="servo" onclick="send('U')">Q ↑ Raise Sensor</button>
+            <button class="servo" onclick="send('D')">E ↓ Lower Sensor</button>
+        </div>
+
+        <!-- Auxiliary Relays: Headlights & Cooling Fan Controls -->
+        <div class="center" style="margin-top: 15px;">
+            <button class="servo" style="background: linear-gradient(145deg, #fbc02d, #f57f17);" onclick="send('H')">💡 Light ON</button>
+            <button class="servo" style="background: linear-gradient(145deg, #757575, #424242);" onclick="send('h')">💡 Light OFF</button>
+            <button class="servo" style="background: linear-gradient(145deg, #0288d1, #01579b);" onclick="send('C')">❄️ Fan ON</button>
+            <button class="servo" style="background: linear-gradient(145deg, #757575, #424242);" onclick="send('c')">❄️ Fan OFF</button>
         </div>
 
         <!-- Mission Log Section -->
@@ -344,8 +378,19 @@ header {
             <div class="box"><div class="label">SOIL</div><div class="value" id="soil">--</div></div>
             <div class="box"><div class="label">RAIN</div><div class="value" id="rain">--</div></div>
             <div class="box"><div class="label">LATITUDE</div><div class="value" id="lat">--</div></div>
+			
+<!-- ========================================================== -->
             <div class="box"><div class="label">LONGITUDE</div><div class="value" id="lng">--</div></div>
+			<div class="box"><div class="label">MOTOR BATTERY</div><div class="value" id="motor_bat">--</div></div>
+<div class="box"><div class="label">LOGIC BATTERY</div><div class="value" id="logic_bat">--</div></div>
         </div>
+		
+
+        <!-- Raw Telemetry Data Stream Box 
+        <div class="box" style="grid-column: 1 / -1; margin-top: 20px; text-align: left;">
+            <div class="label">RAW TELEMETRY DATA (JSON STREAM)</div>
+            <div class="value" id="rawData" style="font-size: 14px; font-family: 'Courier New', Courier, monospace; word-break: break-all; color: #00e5ff; margin-top: 8px;">Waiting for telemetry...</div>
+        </div>-->
 
         <div class="charts">
             <div class="chartbox"><canvas id="tempChart"></canvas></div>
@@ -355,19 +400,34 @@ header {
 
     <!-- 6. MAP CARD -->
     <div class="card">
-        <div class="section-title">GPS Navigation</div>
+        <div class="section-title">GPS Navigation & Positioning</div>
         <div id="map"></div>
     </div>
 
-    <div class="footer">WASD → Move | SPACE → Stop | Q → Raise | E → Lower</div>
+    <div class="footer">WASD → Move | SPACE → Stop | Q → Raise | E → Lower | H → Light | C → Fan</div>
 
 </div>
 
 <script>
 // ================= GLOBALS & CONFIG =================
-const BROKER = "wss://broker.emqx.io:8084/mqtt";
-const CMD_TOPIC = "demo_rover/cmd";
-const SENSOR_TOPIC = "demo_rover/sensors";
+const BROKER = "wss://broker.emqx.io:8084/mqtt"; // 8084 = TLS (wss). 8083 is plain ws and breaks the wss:// handshake.
+const CMD_TOPIC = "pragun_rover_2026/cmd";
+const SENSOR_TOPIC = "pragun_rover_2026/sensors";
+
+// Human-Readable Command Names Mapping for Last Command Display
+const COMMAND_NAMES = {
+    'F': 'FORWARD',
+    'B': 'BACKWARD',
+    'L': 'LEFT',
+    'R': 'RIGHT',
+    'S': 'STOP',
+    'U': 'RAISE PROBE',
+    'D': 'LOWER PROBE',
+    'H': 'LIGHT ON',
+    'h': 'LIGHT OFF',
+    'C': 'FAN ON',
+    'c': 'FAN OFF'
+};
 
 let labels = [], tempData = [], humData = [];
 let map, marker, routeLine, routePoints = [];
@@ -376,6 +436,34 @@ const startTime = Date.now();
 let cmdsSentCount = 0, sensorUpdateCount = 0, gpsPointsCount = 0;
 let estimatedDistance = 0, lastLat = null, lastLng = null;
 let logEntryCount = 0, firstGpsFix = true;
+
+// ================= REAL PHONE CAMERA ON/OFF (HTTP API METHOD) =================
+// Uses VDO.Ninja's documented HTTP remote-control API instead of postMessage.
+// The hidden iframe above registers this session with &api=VDO_API_KEY; that
+// session then relays our HTTP GET calls to the actual guest (the phone).
+// Docs: https://api.vdo.ninja/{apiKey}/{action}/{target}/{value}
+const VDO_API_KEY = "PragunRoverCamCtrl2026"; // Must match the &api= value on the hidden iframe above
+const VDO_GUEST_STREAM_ID = "PragunRoverCam"; // Must match the phone's actual Stream ID
+let cameraOn = true;
+
+function toggleCamera() {
+    const btn = document.getElementById("camToggleBtn");
+    cameraOn = !cameraOn;
+
+    const url = `https://api.vdo.ninja/${VDO_API_KEY}/camera/${VDO_GUEST_STREAM_ID}/${cameraOn}`;
+
+    // Fire the request via an <img> beacon instead of fetch(). This sidesteps any
+    // CORS restriction on reading the response -- we don't need to read anything,
+    // we just need the GET request to actually reach VDO.Ninja's server, which an
+    // <img src=...> does reliably regardless of cross-origin response headers.
+    const beacon = new Image();
+    beacon.src = url;
+
+    btn.innerHTML = cameraOn ? "📷 Turn Camera OFF" : "📷 Turn Camera ON";
+    btn.style.background = cameraOn
+        ? "linear-gradient(145deg, #ef5350, #f44336)"
+        : "linear-gradient(145deg, #00e676, #00c853)";
+}
 
 // ================= UPTIME TIMER =================
 setInterval(() => {
@@ -429,7 +517,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ================= MQTT =================
+// ================= MQTT CLIENT =================
 const client = mqtt.connect(BROKER, { connectTimeout: 5000, reconnectPeriod: 2000 });
 
 client.on("connect", () => {
@@ -454,21 +542,34 @@ client.on("message", (topic, message) => {
     sensorUpdateCount++;
     document.getElementById("statSensors").innerHTML = sensorUpdateCount;
 
-    let d = JSON.parse(message.toString());
+    let messageStr = message.toString();
+    const rawDataEl = document.getElementById("rawData");
+    if (rawDataEl) rawDataEl.innerText = messageStr; // Element is commented out in HTML, so guard against it being missing
+
+    let d = JSON.parse(messageStr);
 
     // Update Environmental Values
     document.getElementById("temp").innerHTML = d.temp !== undefined ? d.temp + " °C" : "--";
     document.getElementById("hum").innerHTML = d.hum !== undefined ? d.hum + " %" : "--";
     document.getElementById("press").innerHTML = d.press !== undefined ? d.press + " hPa" : (d.pressure !== undefined ? d.pressure + " hPa" : "--");
-    document.getElementById("soil").innerHTML = d.soil || "--";
-    document.getElementById("rain").innerHTML = d.rain || "--";
+    document.getElementById("soil").innerHTML = d.soil !== undefined ? d.soil : "--";
+    document.getElementById("rain").innerHTML = d.rain !== undefined ? d.rain : "--";
     document.getElementById("lat").innerHTML = d.lat ? Number(d.lat).toFixed(6) : "--";
     document.getElementById("lng").innerHTML = d.lng ? Number(d.lng).toFixed(6) : "--";
 
-    // Update Gemini AI Prediction Text
+    // Update Gemini AI Prediction / Overview Text
     if(d.prediction) {
         document.getElementById("aiPrediction").innerHTML = d.prediction;
     }
+	// ================= BATTERY UPDATES =================
+if (d.motor_pct !== undefined) {
+  document.getElementById('motor_bat').innerText = d.motor_pct + '% (' + d.motor_v + 'V)';
+}
+
+if (d.logic_pct !== undefined) {
+  document.getElementById('logic_bat').innerText = d.logic_pct + '% (' + d.logic_v + 'V)';
+}
+// ===================================================
 
     // Update Charts
     labels.push(new Date().toLocaleTimeString());
@@ -478,7 +579,7 @@ client.on("message", (topic, message) => {
     if(window.tempChart) window.tempChart.update();
     if(window.humChart) window.humChart.update();
 
-    // Update Map
+    // Update GPS Positioning on Map
     if(d.lat && d.lng && d.lat != 0 && d.lng != 0 && map) {
         gpsPointsCount++;
         document.getElementById("statGps").innerHTML = gpsPointsCount;
@@ -510,7 +611,10 @@ function logCommand(cmd) {
     const logContainer = document.getElementById("missionLog");
     const entry = document.createElement("div");
     entry.className = "log-entry";
-    entry.innerHTML = `<span class="log-time">${new Date().toLocaleTimeString('en-US', { hour12: false })}</span><span>${cmd}</span>`;
+    
+    let displayName = COMMAND_NAMES[cmd] || cmd;
+
+    entry.innerHTML = `<span class="log-time">${new Date().toLocaleTimeString('en-US', { hour12: false })}</span><span>${displayName}</span>`;
     
     logContainer.prepend(entry);
     logEntryCount++;
@@ -522,20 +626,27 @@ function send(cmd) {
     client.publish(CMD_TOPIC, cmd);
     cmdsSentCount++;
     document.getElementById("statCmds").innerHTML = cmdsSentCount;
-    document.getElementById("statLastCmd").innerHTML = cmd;
+    
+    // Display full name (e.g. BACKWARD instead of B) in LAST COMMAND stat box
+    let displayName = COMMAND_NAMES[cmd] || cmd;
+    document.getElementById("statLastCmd").innerHTML = displayName;
+    
     logCommand(cmd);
 }
 
-// ================= KEYBOARD CONTROLS =================
+// ================= KEYBOARD SHORTCUTS =================
 document.addEventListener("keydown", (e) => {
     if(e.repeat) return;
-    if(e.key.toLowerCase() == "w") send("FORWARD");
-    else if(e.key.toLowerCase() == "a") send("LEFT");
-    else if(e.key.toLowerCase() == "s") send("BACKWARD");
-    else if(e.key.toLowerCase() == "d") send("RIGHT");
-    else if(e.code == "Space") send("STOP");
-    else if(e.key.toLowerCase() == "q") send("RAISE");
-    else if(e.key.toLowerCase() == "e") send("LOWER");
+    let k = e.key.toLowerCase();
+    if(k === "w") send("F");
+    else if(k === "a") send("L");
+    else if(k === "s") send("B");
+    else if(k === "d") send("R");
+    else if(e.code === "Space") send("S");
+    else if(k === "q") send("U");
+    else if(k === "e") send("D");
+    else if(k === "h") send("H");
+    else if(k === "c") send("C");
 });
 </script>
 </body>
